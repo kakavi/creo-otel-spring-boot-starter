@@ -1,7 +1,7 @@
 # Creo OTEL Spring Boot Starter
 
-[![CI](https://github.com/YOUR_USERNAME/creo-otel-spring-boot-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/creo-otel-spring-boot-starter/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/kakavi/creo-otel-spring-boot-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/creo-otel-spring-boot-starter/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Java](https://img.shields.io/badge/Java-25%2B-orange)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.x-brightgreen)](https://spring.io/projects/spring-boot)
 
@@ -208,7 +208,7 @@ This project uses [Semantic Versioning](https://semver.org/). SNAPSHOT versions 
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License, Version 2.0 — see the [LICENSE](LICENSE) file for details.
 
 ---
 
