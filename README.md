@@ -127,6 +127,162 @@ dependencies {
    ```
 
 ## Configuration
+### Required Setup
+
+#### 1. Logback Configuration
+
+Create `src/main/resources/logback-spring.xml` to enable OpenTelemetry log export:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <appender name="OpenTelemetry"
+              class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="OpenTelemetry"/>
+    </root>
+
+</configuration>
+```
+
+#### 2. OTLP Endpoint Configuration
+
+**Option A: Using Docker Compose (Development)**
+
+If you use `spring-boot-docker-compose` with Grafana LGTM, endpoints are auto-configured:
+```groovy
+dependencies {
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+}
+```
+```yaml
+# compose.yaml
+services:
+  lgtm:
+    image: grafana/otel-lgtm
+    ports:
+      - "3000:3000"   # Grafana UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+```
+
+> No endpoint configuration needed — Spring Boot auto-detects the container!
+
+
+**Option B: Manual Configuration (Production)**
+
+For production or external collectors, configure endpoints explicitly:
+Add the following to your `application.properties` or `application.yml`:
+
+**application.properties**
+```properties
+# Application name (used as service.name in telemetry)
+spring.application.name=your-service-name
+
+# OTLP Metrics export
+management.otlp.metrics.export.url=http://localhost:4318/v1/metrics
+
+# OTLP Traces export
+management.opentelemetry.tracing.export.otlp.endpoint=http://localhost:4318/v1/traces
+
+# OTLP Logs export
+management.opentelemetry.logging.export.otlp.endpoint=http://localhost:4318/v1/logs
+
+# Sample 100% of traces (adjust for production e.g to 0.1)
+management.tracing.sampling.probability=1.0
+# Metrics export interval in production set to 1m or higher
+management.otlp.metrics.export.step=10s
+```
+
+**application.yml**
+```yaml
+spring:
+  application:
+    name: your-service-name
+
+management:
+  otlp:
+    metrics:
+      export:
+        url: http://localhost:4318/v1/metrics
+        step: 10s
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
+    logging:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/logs
+  tracing:
+    sampling:
+      probability: 1.0
+```
+
+> **Note:** Adjust the OTLP endpoints to match your observability backend (e.g., Grafana LGTM, Jaeger, or OpenTelemetry Collector).
+
+---
+
+### Optional Configuration
+
+#### Enable/Disable Auto-Configurations
+
+Exclude specific auto-configuration classes using Spring Boot's standard property:
+
+```properties
+spring.autoconfigure.exclude=\
+  com.creotech.starter.autoconfigure.FilterConfiguration,\
+  com.creotech.starter.autoconfigure.OpenTelemetryConfiguration
+```
+
+#### Enable Header Logging
+
+The `HeaderLoggerFilter` logs at DEBUG level. Enable it in your `application.properties`:
+
+```properties
+logging.level.com.creotech.starter.autoconfigure.HeaderLoggerFilter=DEBUG
+```
+
+#### Custom Logback Configuration
+
+The OpenTelemetry appender is installed programmatically if `opentelemetry-logback-appender-1.0` is present on the classpath. You can extend the base configuration in your `logback-spring.xml` as needed.
+
+## Auto-Configuration Details
+
+| Configuration Class | Description |
+|---------------------|-------------|
+| `ContextPropagationConfiguration` | Registers `ContextPropagatingTaskDecorator` for async context propagation |
+| `FilterConfiguration` | Registers `HeaderLoggerFilter` and `AddTraceIdFilter` (servlet web apps only) |
+| `OpenTelemetryConfiguration` | Wires OpenTelemetry, installs Logback appender, registers JVM/system metrics and observation conventions |
+
+### Compatibility Notes
+
+- Requires Micrometer Core and Micrometer Tracing APIs
+- The consuming application typically provides OpenTelemetry SDK/OTLP exporter
+- Servlet filters only activate in servlet-based applications (not reactive/WebFlux)
+
+## Troubleshooting
+
+### X-Trace-Id header not appearing in responses
+
+- Verify Micrometer Tracing is on the classpath
+- Ensure you're using servlet-based Spring MVC (not WebFlux)
+- Check that `FilterConfiguration` is not excluded
+
+### Request headers not being logged
+
+- Set DEBUG level for the filter:
+  ```properties
+  logging.level.com.creotech.starter.autoconfigure.HeaderLoggerFilter=DEBUG
+  ```
+- Verify your application uses Logback or another SLF4J implementation
 
 ### Enable/Disable Auto-Configurations
 
