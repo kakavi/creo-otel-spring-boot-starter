@@ -1,0 +1,74 @@
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot' version '4.0.0' apply false
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'maven-publish'
+}
+
+group = 'com.creotech'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+    withSourcesJar()
+    withJavadocJar()
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.boot:spring-boot-dependencies:${property('springBootVersion')}"
+    }
+}
+
+dependencies {
+    // Spring Boot AutoConfiguration API
+    api 'org.springframework.boot:spring-boot-autoconfigure'
+
+    // Micrometer core and tracing API
+    api 'io.micrometer:micrometer-core'
+    api 'io.micrometer:micrometer-tracing'
+
+    // OpenTelemetry API (for appender installer)
+    api 'io.opentelemetry:opentelemetry-api'
+
+    // OpenTelemetry Logback appender (installed at runtime)
+    api "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:${property('opentelemetryLogbackAppenderVersion')}"
+
+    // Compile-only dependencies provided by the application using the starter
+    compileOnly 'org.springframework:spring-web'
+    compileOnly 'org.springframework:spring-core'
+    compileOnly 'jakarta.servlet:jakarta.servlet-api:6.0.0'
+    // Logging APIs required only for compilation; runtime provided by the consuming app (e.g., Spring Boot starter-logging)
+    compileOnly 'org.slf4j:slf4j-api:2.0.17'
+    compileOnly 'ch.qos.logback:logback-core:1.5.23'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            groupId = project.group
+            artifactId = 'creo-otel-spring-boot-starter'
+            version = project.version
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username = "$mavenU"
+                password = "$mavenP"
+            }
+
+            url = version.endsWith('SNAPSHOT') ? "sftp://repo.myxeno.com:22/home/maven/m2repo/snapshots" : "sftp://repo.myxeno.com:22/home/maven/m2repo/releases"
+        }
+    }
+}

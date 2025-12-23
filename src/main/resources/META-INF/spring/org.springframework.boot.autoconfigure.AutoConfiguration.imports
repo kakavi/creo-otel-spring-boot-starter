@@ -1,0 +1,3 @@
+com.creotech.starter.autoconfigure.ContextPropagationConfiguration
+com.creotech.starter.autoconfigure.FilterConfiguration
+com.creotech.starter.autoconfigure.OpenTelemetryConfiguration
