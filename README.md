@@ -53,7 +53,10 @@ Version:  0.0.1-SNAPSHOT
 ```groovy
 repositories {
     mavenCentral()
-    mavenLocal() // Required for SNAPSHOT versions
+    // Repositories hosting this starter
+    maven { url "https://repo.myxeno.com/m2/releases" }
+    maven { url "https://repo.myxeno.com/m2/snapshots" }
+    mavenLocal() // Optional: useful when working with local SNAPSHOTs
 }
 
 dependencies {
@@ -66,7 +69,9 @@ dependencies {
 ```kotlin
 repositories {
     mavenCentral()
-    mavenLocal() // Required for SNAPSHOT versions
+    maven(url = "https://repo.myxeno.com/m2/releases")
+    maven(url = "https://repo.myxeno.com/m2/snapshots")
+    mavenLocal() // Optional: useful when working with local SNAPSHOTs
 }
 
 dependencies {
@@ -77,6 +82,18 @@ dependencies {
 ### Maven
 
 ```xml
+<repositories>
+    <repository>
+        <id>myxeno-releases</id>
+        <url>https://repo.myxeno.com/m2/releases</url>
+    </repository>
+    <repository>
+        <id>myxeno-snapshots</id>
+        <url>https://repo.myxeno.com/m2/snapshots</url>
+    </repository>
+</repositories>
+
+<!-- Then add the dependency -->
 <dependency>
     <groupId>com.creotech</groupId>
     <artifactId>creo-otel-spring-boot-starter</artifactId>
