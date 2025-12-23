@@ -211,7 +211,7 @@ management:
     metrics:
       export:
         url: http://localhost:4318/v1/metrics
-        step: 10s
+        step: 60s
   opentelemetry:
     tracing:
       export:
@@ -223,7 +223,7 @@ management:
           endpoint: http://localhost:4318/v1/logs
   tracing:
     sampling:
-      probability: 1.0
+      probability: 0.1
 ```
 
 > **Note:** Adjust the OTLP endpoints to match your observability backend (e.g., Grafana LGTM, Jaeger, or OpenTelemetry Collector).
