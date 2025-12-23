@@ -1,105 +1,215 @@
 # Creo OTEL Spring Boot Starter
 
-A lightweight Spring Boot starter that auto-configures OpenTelemetry + Micrometer conveniences and a couple of servlet filters to improve log correlation:
-- Logs incoming HTTP request headers at DEBUG.
-- Adds the current trace id to responses via the `X-Trace-Id` header.
-- Installs the OpenTelemetry Logback appender at runtime so your logs are trace-aware when a compatible logging setup is present.
+[![CI](https://github.com/YOUR_USERNAME/creo-otel-spring-boot-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/creo-otel-spring-boot-starter/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Java](https://img.shields.io/badge/Java-25%2B-orange)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.x-brightgreen)](https://spring.io/projects/spring-boot)
 
-Coordinates
-- Group: `com.creotech`
-- Artifact: `creo-otel-spring-boot-starter`
-- Version: `0.0.1-SNAPSHOT`
+A lightweight Spring Boot starter that auto-configures OpenTelemetry + Micrometer conveniences and servlet filters to improve observability and log correlation.
 
-Requirements
-- Java 25+
-- Spring Boot 4.x (the exact version is taken from your BOM; default is 4.0.0 via gradle.properties)
-- A logging implementation on the classpath (e.g., Spring Boot’s starter-logging which brings Logback)
+## Table of Contents
 
-Features
-- Context propagation for async tasks using `ContextPropagatingTaskDecorator`.
-- Servlet filters (only in servlet web apps):
-  - HeaderLoggerFilter – logs request headers at DEBUG.
-  - AddTraceIdFilter – adds `X-Trace-Id` using Micrometer Tracing’s current trace context.
-- OpenTelemetry integration:
-  - Installs `opentelemetry-logback-appender` at runtime if available.
-  - Registers JVM/system metrics with OTEL conventions.
-  - Registers `OpenTelemetryServerRequestObservationConvention`.
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Auto-Configuration Details](#auto-configuration-details)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
-Quick start
-1) Add the dependency
-- Gradle (Groovy)
-  repositories {
-      mavenCentral()
-      mavenLocal() // optional if consuming a local SNAPSHOT
-  }
-  dependencies {
-      implementation 'com.creotech:creo-otel-spring-boot-starter:0.0.1-SNAPSHOT'
-  }
+## Features
 
-- Gradle (Kotlin)
-  repositories {
-      mavenCentral()
-      mavenLocal()
-  }
-  dependencies {
-      implementation("com.creotech:creo-otel-spring-boot-starter:0.0.1-SNAPSHOT")
-  }
+- **Context Propagation** — Async task context propagation using `ContextPropagatingTaskDecorator`
+- **Servlet Filters** (servlet web apps only):
+    - `HeaderLoggerFilter` — Logs incoming HTTP request headers at DEBUG level
+    - `AddTraceIdFilter` — Adds `X-Trace-Id` header to responses using Micrometer Tracing
+- **OpenTelemetry Integration**:
+    - Automatic installation of `opentelemetry-logback-appender` at runtime
+    - JVM/system metrics with OpenTelemetry conventions
+    - `OpenTelemetryServerRequestObservationConvention` registration
 
-- Maven
-  <dependency>
+## Requirements
+
+| Requirement | Version |
+|-------------|---------|
+| Java | 25+ |
+| Spring Boot | 4.x |
+| Logging | Logback (via `spring-boot-starter-logging`) or any SLF4J implementation |
+
+## Installation
+
+### Maven Coordinates
+
+```
+Group:    com.creotech
+Artifact: creo-otel-spring-boot-starter
+Version:  0.0.1-SNAPSHOT
+```
+
+### Gradle (Groovy)
+
+```groovy
+repositories {
+    mavenCentral()
+    mavenLocal() // Required for SNAPSHOT versions
+}
+
+dependencies {
+    implementation 'com.creotech:creo-otel-spring-boot-starter:0.0.1-SNAPSHOT'
+}
+```
+
+### Gradle (Kotlin DSL)
+
+```kotlin
+repositories {
+    mavenCentral()
+    mavenLocal() // Required for SNAPSHOT versions
+}
+
+dependencies {
+    implementation("com.creotech:creo-otel-spring-boot-starter:0.0.1-SNAPSHOT")
+}
+```
+
+### Maven
+
+```xml
+<dependency>
     <groupId>com.creotech</groupId>
     <artifactId>creo-otel-spring-boot-starter</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-  </dependency>
+</dependency>
+```
 
-2) Ensure logging is present
-Spring Boot applications typically include `spring-boot-starter-logging` (Logback). This starter does not force a logging implementation; it only needs the APIs to compile.
+## Quick Start
 
-3) Run your app
-- Set your application log level to DEBUG to see header logs from `HeaderLoggerFilter`.
-- Make a request and observe `X-Trace-Id` in the response headers.
+1. **Add the dependency** (see [Installation](#installation))
 
-Configuration and customization
-- Enable/disable auto-configurations
-  You can exclude any auto-configuration class using Spring Boot’s standard property:
-  spring.autoconfigure.exclude=com.creotech.starter.autoconfigure.FilterConfiguration,com.creotech.starter.autoconfigure.OpenTelemetryConfiguration
+2. **Ensure logging is present**
 
-- Control header logging verbosity
-  This filter only logs at DEBUG. To enable it:
+   Spring Boot applications typically include `spring-boot-starter-logging` (Logback) by default.
+
+3. **Run your application**
+
+   ```bash
+   ./gradlew bootRun
+   ```
+
+4. **Make a request and observe the trace ID**
+
+   ```bash
+   curl -i http://localhost:8080/your-endpoint
+   ```
+
+   Response headers will include:
+   ```
+   X-Trace-Id: 0dbe0809731e35081d6db16c2ca0ef91
+   ```
+
+## Configuration
+
+### Enable/Disable Auto-Configurations
+
+Exclude specific auto-configuration classes using Spring Boot's standard property:
+
+```properties
+spring.autoconfigure.exclude=\
+  com.creotech.starter.autoconfigure.FilterConfiguration,\
+  com.creotech.starter.autoconfigure.OpenTelemetryConfiguration
+```
+
+### Enable Header Logging
+
+The `HeaderLoggerFilter` logs at DEBUG level. Enable it in your `application.properties`:
+
+```properties
+logging.level.com.creotech.starter.autoconfigure.HeaderLoggerFilter=DEBUG
+```
+
+### Custom Logback Configuration
+
+The OpenTelemetry appender is installed programmatically if `opentelemetry-logback-appender-1.0` is present on the classpath. You can still customize Logback via `logback.xml` or `logback-spring.xml`.
+
+## Auto-Configuration Details
+
+| Configuration Class | Description |
+|---------------------|-------------|
+| `ContextPropagationConfiguration` | Registers `ContextPropagatingTaskDecorator` for async context propagation |
+| `FilterConfiguration` | Registers `HeaderLoggerFilter` and `AddTraceIdFilter` (servlet web apps only) |
+| `OpenTelemetryConfiguration` | Wires OpenTelemetry, installs Logback appender, registers JVM/system metrics and observation conventions |
+
+### Compatibility Notes
+
+- Requires Micrometer Core and Micrometer Tracing APIs
+- The consuming application typically provides OpenTelemetry SDK/OTLP exporter
+- Servlet filters only activate in servlet-based applications (not reactive/WebFlux)
+
+## Troubleshooting
+
+### X-Trace-Id header not appearing in responses
+
+- Verify Micrometer Tracing is on the classpath
+- Ensure you're using servlet-based Spring MVC (not WebFlux)
+- Check that `FilterConfiguration` is not excluded
+
+### Request headers not being logged
+
+- Set DEBUG level for the filter:
+  ```properties
   logging.level.com.creotech.starter.autoconfigure.HeaderLoggerFilter=DEBUG
+  ```
+- Verify your application uses Logback or another SLF4J implementation
 
-- Using a custom Logback config
-  The OTEL appender is installed programmatically if `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0` is present. You can still fully customize Logback via your `logback.xml`/`logback-spring.xml`.
+## Building from Source
 
-What gets auto-configured
-- ContextPropagationConfiguration – registers `ContextPropagatingTaskDecorator` (for async context propagation).
-- FilterConfiguration – registers `HeaderLoggerFilter` and `AddTraceIdFilter` when running as a servlet web app and Micrometer Tracing is on the classpath.
-- OpenTelemetryConfiguration – wires `OpenTelemetry` and installs the Logback appender; also registers JVM/system metrics and the default server observation convention.
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/creo-otel-spring-boot-starter.git
+cd creo-otel-spring-boot-starter
 
-Compatibility notes
-- This starter relies on Micrometer Core and Micrometer Tracing APIs and on the OpenTelemetry Logback appender. The consuming application typically brings OpenTelemetry SDK/OTLP exporter as part of your observability setup.
-- The servlet filters only activate in servlet-based apps (not reactive).
+# Build
+./gradlew build
 
-Local build and publish (for testing)
-- Build and publish to your local Maven cache:
-  ./gradlew clean publishToMavenLocal
+# Run tests
+./gradlew test
 
-Troubleshooting
-- I don’t see X-Trace-Id in responses
-  Ensure Micrometer Tracing is on the classpath and that you’re using servlet-based Spring MVC.
+# Publish to local Maven repository
+./gradlew publishToMavenLocal
+```
 
-- I don’t see header logs
-  Set DEBUG level for `com.creotech.starter.autoconfigure.HeaderLoggerFilter` (or package) and ensure your app uses Logback or another SLF4J implementation.
+## Contributing
 
-Contributing
-- Issues and pull requests are welcome. Please include reproduction steps and versions.
-- Follow conventional commit messages if possible and include tests where applicable.
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
 
-Versioning
-- Uses Semantic Versioning. SNAPSHOTs are subject to change.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-Security
-- Please do not file security issues publicly. Contact the maintainers privately if you suspect a vulnerability.
+### Reporting Issues
 
-License
-- Licensed under the Apache License, Version 2.0.
+Please include:
+- Java and Spring Boot versions
+- Steps to reproduce
+- Expected vs actual behavior
+- Relevant logs or stack traces
+
+### Security
+
+Please do not file security issues publicly. Contact the maintainers privately if you suspect a vulnerability.
+
+## Versioning
+
+This project uses [Semantic Versioning](https://semver.org/). SNAPSHOT versions are subject to change.
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+Made with ❤️ by [Creotech](https://github.com/YOUR_USERNAME)
