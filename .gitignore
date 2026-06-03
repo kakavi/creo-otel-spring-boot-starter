@@ -38,3 +38,6 @@ out/
 # Local environment
 .env
 .env.local
+
+# macOS
+.DS_Store

@@ -18,7 +18,6 @@ java {
 
 repositories {
     mavenCentral()
-    mavenLocal()
 }
 
 dependencyManagement {
@@ -41,6 +40,9 @@ dependencies {
     // OpenTelemetry Logback appender (installed at runtime)
     api "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:${property('opentelemetryLogbackAppenderVersion')}"
 
+    // Generates spring-configuration-metadata.json for IDE auto-completion of creo.otel.* properties
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
     // Compile-only dependencies provided by the application using the starter
     compileOnly 'org.springframework:spring-web'
     compileOnly 'org.springframework:spring-core'
@@ -49,7 +51,29 @@ dependencies {
     compileOnly 'org.slf4j:slf4j-api:2.0.17'
     compileOnly 'ch.qos.logback:logback-core:1.5.23'
 
+    // Test classpath needs the otherwise compile-only servlet/web/logging stacks
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework:spring-web'
+    testImplementation 'jakarta.servlet:jakarta.servlet-api:6.0.0'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.23'
+    // Required on the test runtime classpath: Gradle does not add the JUnit Platform launcher
+    // automatically. Version is managed by the Spring Boot BOM so it stays aligned with the engine.
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.withType(Javadoc).configureEach {
+    // Keep structural doclint checks but don't warn about missing comments on accessors.
+    options.addStringOption('Xdoclint:all,-missing', '-quiet')
+}
+
+// Reproducible build outputs
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
 }
 
 publishing {
@@ -59,16 +83,41 @@ publishing {
             groupId = project.group
             artifactId = 'creo-otel-spring-boot-starter'
             version = project.version
+
+            pom {
+                name = 'Creo OTEL Spring Boot Starter'
+                description = 'Spring Boot 4 starter that auto-configures OpenTelemetry + Micrometer ' +
+                        'observability conveniences and servlet filters for log correlation.'
+                url = 'https://github.com/kakavi/creo-otel-spring-boot-starter'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                scm {
+                    url = 'https://github.com/kakavi/creo-otel-spring-boot-starter'
+                    connection = 'scm:git:https://github.com/kakavi/creo-otel-spring-boot-starter.git'
+                }
+            }
         }
     }
     repositories {
-        maven {
-            credentials {
-                username = "$mavenU"
-                password = "$mavenP"
+        // Only register the remote SFTP repository when credentials are available so that
+        // `./gradlew build` / `publishToMavenLocal` work for contributors without them.
+        def mavenUser = findProperty('mavenU')
+        def mavenPassword = findProperty('mavenP')
+        if (mavenUser && mavenPassword) {
+            maven {
+                name = 'myxeno'
+                credentials {
+                    username = mavenUser
+                    password = mavenPassword
+                }
+                url = version.endsWith('SNAPSHOT')
+                        ? 'sftp://repo.myxeno.com:22/home/maven/m2repo/snapshots'
+                        : 'sftp://repo.myxeno.com:22/home/maven/m2repo/releases'
             }
-
-            url = version.endsWith('SNAPSHOT') ? "sftp://repo.myxeno.com:22/home/maven/m2repo/snapshots" : "sftp://repo.myxeno.com:22/home/maven/m2repo/releases"
         }
     }
 }
