@@ -39,14 +39,21 @@ class OpenTelemetryConfigurationTests {
     }
 
     @Test
-    void appenderInstallerRequiresAnOpenTelemetryBean() {
-        this.runner.run(context -> assertThat(context).doesNotHaveBean(InstallOpenTelemetryAppender.class));
+    void appenderInstallerStartsGracefullyWithoutAnOpenTelemetryBean() {
+        // Regression guard: the installer must resolve OpenTelemetry lazily (ObjectProvider),
+        // so it is always registered and the context starts even when no OpenTelemetry bean
+        // exists — it simply no-ops instead of failing or being skipped on a fragile condition.
+        this.runner.run(context -> assertThat(context)
+                .hasNotFailed()
+                .hasSingleBean(InstallOpenTelemetryAppender.class));
     }
 
     @Test
     void appenderInstallerIsRegisteredWhenOpenTelemetryBeanPresent() {
         this.runner.withBean(OpenTelemetry.class, OpenTelemetry::noop)
-                .run(context -> assertThat(context).hasSingleBean(InstallOpenTelemetryAppender.class));
+                .run(context -> assertThat(context)
+                        .hasNotFailed()
+                        .hasSingleBean(InstallOpenTelemetryAppender.class));
     }
 
     @Test

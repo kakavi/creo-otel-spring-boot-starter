@@ -15,8 +15,8 @@ import io.opentelemetry.api.OpenTelemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -45,9 +45,10 @@ public class OpenTelemetryConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenTelemetryConfiguration.class);
 
     @Bean
-    @ConditionalOnBean(OpenTelemetry.class)
     @ConditionalOnMissingBean
-    InstallOpenTelemetryAppender installOpenTelemetryAppender(OpenTelemetry openTelemetry) {
+    InstallOpenTelemetryAppender installOpenTelemetryAppender(ObjectProvider<OpenTelemetry> openTelemetry) {
+        // Resolved lazily via ObjectProvider so installation does not depend on this
+        // auto-configuration being ordered after the OpenTelemetry SDK auto-configuration.
         return new InstallOpenTelemetryAppender(openTelemetry);
     }
 
